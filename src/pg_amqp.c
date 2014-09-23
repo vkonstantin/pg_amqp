@@ -294,8 +294,20 @@ pg_amqp_publish_opt(PG_FUNCTION_ARGS, int channel) {
       set_bytes_from_text(exchange_b,1);
       set_bytes_from_text(routing_key_b,2);
       set_bytes_from_text(body_b,3);
+	  
+      // fronik. start
+      amqp_basic_properties_t props;
+      props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+      props.content_type = amqp_cstring_bytes("text/plain");
+      props.delivery_mode = 2; /* persistent delivery mode */	  
+      rv = amqp_basic_publish(bs->conn, channel, exchange_b, routing_key_b, mandatory, immediate, &props, body_b);
+		
+      /*
       rv = amqp_basic_publish(bs->conn, channel, exchange_b, routing_key_b,
                               mandatory, immediate, NULL, body_b);
+      */		
+      // fronik. end
+		
       reply = amqp_get_rpc_reply();
       if(rv || reply->reply_type != AMQP_RESPONSE_NORMAL) {
         if(once_more && (channel == 1 || bs->uncommitted == 0)) {
