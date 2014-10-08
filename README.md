@@ -16,44 +16,6 @@ To build pg_amqp, just do this:
     make
     make install
 
-If you encounter an error such as:
-
-    "Makefile", line 8: Need an operator
-
-You need to use GNU make, which may well be installed on your system as
-`gmake`:
-
-    gmake
-    gmake install
-
-If you encounter an error such as:
-
-    make: pg_config: Command not found
-
-Be sure that you have `pg_config` installed and in your path. If you used a
-package management system such as RPM to install PostgreSQL, be sure that the
-`-devel` package is also installed. If necessary tell the build process where
-to find it:
-
-    env PG_CONFIG=/path/to/pg_config make && make install
-
-Some prepackaged Mac installs of postgres might need a little coaxing with
-modern XCodes.  If you encounter an error such as:
-
-    make: /Applications/Xcode.app/Contents/Developer/Toolchains/OSX10.8.xctoolchain/usr/bin/cc: No such file or directory
-
-Then you'll need to link the toolchain
-
-    sudo ln -s /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain /Applications/Xcode.app/Contents/Developer/Toolchains/OSX10.8.xctoolchain
-
-And if you encounter an error about a missing `/usr/bin/postgres`:
-
-    ld: file not found: /usr/bin/postgres
-
-You might need to link in your real postgres:
-
-    sudo ln -s /usr/bin/postgres_real /usr/bin/postgres
-
 Loading
 -------
 
@@ -67,15 +29,6 @@ as connecting to a database as a super user and running:
 
     CREATE EXTENSION amqp;
 
-If you've upgraded your cluster to PostgreSQL 9.1 and already had amqp
-installed, you can upgrade it to a properly packaged extension with:
-
-    CREATE EXTENSION amqp FROM unpackaged;
-
-For versions of PostgreSQL less than 9.1.0, you'll need to run the
-installation script:
-
-    psql -d mydb -f /path/to/pgsql/share/contrib/amqp.sql
 
 Using
 -----
@@ -83,9 +36,22 @@ Using
 Insert AMQP broker information (host/port/user/pass) into the
 `amqp.broker` table.
 
+    Example: 
+    INSERT INTO amqp.broker(host,port,vhost,username,password) 
+        VALUES ('localhost', 5672, NULL, 'guest', 'guest') 
+        RETURNING broker_id
+
+Declare exchange if need:
+
+    Example: 
+    SELECT amqp.exchange_declare(1, 'router', 'direct', false, true, false)
+
 A process starts and connects to PostgreSQL and runs:
 
     SELECT amqp.publish(broker_id, 'amqp.direct', 'foo', 'message');
+
+    Example: 
+    SELECT amqp.publish(1, 'router', null, 'Hello' );
 
 Upon process termination, all broker connections will be torn down.
 If there is a need to disconnect from a specific broker, one can call:
